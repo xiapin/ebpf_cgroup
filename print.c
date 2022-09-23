@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <getopt.h>
+#include <sys/resource.h>
 
 #include "print.h"
 #include "print.skel.h"
@@ -87,6 +88,15 @@ int main(int argc, char **argv)
     struct ring_buffer *rb = NULL;
     struct print_bpf *skel;
     int err;
+
+    struct rlimit rlim = {
+        .rlim_cur = 512UL << 20, /* 512MB */
+        .rlim_max = 512UL << 20,
+    };
+    if (setrlimit(RLIMIT_MEMLOCK, &rlim)) {
+        fprintf(stderr, "set rlimit error!\n");
+        return 1;
+    }
 
     sig_act();
     if (parse_args(argc, argv)) {
