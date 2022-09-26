@@ -1,6 +1,5 @@
 #include <signal.h>
 #include <argp.h>
-#include <sys/resource.h>
 #include <bpf/libbpf.h>
 #include <unistd.h>
 #include <stdio.h>
