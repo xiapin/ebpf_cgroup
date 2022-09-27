@@ -1,6 +1,8 @@
 #include "sysctl.skel.h"
 #include <signal.h>
+#include <fcntl.h>
 #include <bpf/libbpf.h>
+#include <unistd.h>
 #include <sys/resource.h>
 #include <stdlib.h>
 
@@ -14,13 +16,18 @@ static void sig_handler(int sig)
 static void sig_act(void)
 {
     signal(SIGINT, sig_handler);
-	signal(SIGTERM, sig_handler);
+    signal(SIGTERM, sig_handler);
 }
 
 int main(int argc, char **argv)
 {
     int err;
     struct sysctl_bpf *skel;
+
+    if (argc != 2) {
+        printf("usage: %s cgroup\n", argv[0]);
+        return 1;
+    }
     sig_act();
 
     struct rlimit rlim = {
@@ -43,11 +50,19 @@ int main(int argc, char **argv)
         fprintf(stderr, "Failed to attach skeleton\n");
         return 1;
     }
-/*
-openat(AT_FDCWD, "/sys/fs/cgroup", O_RDONLY) = 3
-bpf(BPF_PROG_GET_FD_BY_ID, {prog_id=138, next_id=0, open_flags=0}, 120)
-bpf(BPF_PROG_ATTACH, {target_fd=3, attach_bpf_fd=4, attach_type=BPF_CGROUP_DEVICE, attach_flags=BPF_F_ALLOW_OVERRIDE, replace_bpf_fd=0}, 120) 
-*/
+
+
+    int cgrpfd = open(argv[1], O_RDONLY);
+    if (cgrpfd < 0) {
+        fprintf(stderr, "Failed to open %s\n", argv[1]);
+        goto clean;
+    }
+
+    if (bpf_program__attach_cgroup(skel->progs.sysctl_w_deny, cgrpfd)) {
+        fprintf(stderr, "Failed to attach cgroup!\n");
+	goto clean;
+    }
+
     while (!exiting) {
         sleep(10);
     }

@@ -6,14 +6,21 @@ project(examples)
 # Tell cmake where to find BpfObject module
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
+#EXECUTE_PROCESS(COMMAND uname -r
+#	OUTPUT_VARIABLE KERN
+#	OUTPUT_STRIP_TRAILING_WHITESPACE
+#)
+set(KERN "5.10.0-60.57.0.85.oe2203.x86_64")
+MESSAGE(STATUS "kernel version: ${KERN}")
+
 # Set BpfObject input parameters -- note this is usually not necessary unless
 # you're in a highly vendored environment (like libbpf-bootstrap)
 set(BPFOBJECT_BPFTOOL_EXE /usr/sbin/bpftool)
 set(BPFOBJECT_VMLINUX_H ${CMAKE_CURRENT_SOURCE_DIR}/vmlinux.h)
 set(LIBBPF_INCLUDE_DIRS
 	${CMAKE_CURRENT_SOURCE_DIR}
-	/usr/src/kernels/5.10.0-60.18.0.50.oe2203.x86_64/include/uapi/
-	/usr/src/kernels/5.10.0-60.18.0.50.oe2203.x86_64/include/
+	/usr/src/kernels/${KERN}/include/uapi/
+	/usr/src/kernels/${KERN}/include/
         /usr/include/bpf/)
 set(LIBBPF_LIBRARIES /usr/lib64/libbpf.so)
 find_package(BpfObject REQUIRED)
