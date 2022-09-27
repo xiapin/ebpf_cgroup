@@ -1,11 +1,10 @@
-#include <signal.h>
 #include <argp.h>
 #include <bpf/libbpf.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <getopt.h>
-#include <sys/resource.h>
 
+#include "bpf_utils.h"
 #include "print.h"
 #include "print.skel.h"
 
@@ -13,19 +12,6 @@ struct {
     char comm[COMM_LEN];
     int pid;
 } dump_process; // filter pid or process name
-
-static volatile bool exiting = false;
-
-static void sig_handler(int sig)
-{
-	exiting = true;
-}
-
-static void sig_act(void)
-{
-    signal(SIGINT, sig_handler);
-	signal(SIGTERM, sig_handler);
-}
 
 static int libbpf_print_fn(enum libbpf_print_level level, const char *format, va_list args)
 {
@@ -85,42 +71,25 @@ static int parse_args(int argc, char **argv)
 int main(int argc, char **argv)
 {
     struct ring_buffer *rb = NULL;
-    struct print_bpf *skel;
     int err;
 
-    struct rlimit rlim = {
-        .rlim_cur = 512UL << 20, /* 512MB */
-        .rlim_max = 512UL << 20,
-    };
-    if (setrlimit(RLIMIT_MEMLOCK, &rlim)) {
-        fprintf(stderr, "set rlimit error!\n");
-        return 1;
-    }
-
-    sig_act();
     if (parse_args(argc, argv)) {
         return 1;
     }
 
-    skel = print_bpf__open();
-    if (!skel) {
-        fprintf(stderr, "Failed to open and load BPF skeleton!\n");
+    if (utils_set_rlimits()) {
         return 1;
     }
+    utils_sigact();
+
+    __SKEL_DEFINE(print, skel);
+    skel = __BPF_OPEN(print);
 
     skel->bss->my_pid = dump_process.pid;
     strncpy((char *)skel->bss->filter, dump_process.comm, COMM_LEN);
-    err = print_bpf__load(skel);
-    if (err) {
-        fprintf(stderr, "Failed to load and verify BPF skeleton\n");
-        return 1;
-    }
 
-    err = print_bpf__attach(skel);
-    if (err) {
-        fprintf(stderr, "Failed to attach skeleton\n");
-        return 1;
-    }
+    __BPF_LOAD(print, skel);
+    __BPF_ATTACH(print, skel);
 
     rb = ring_buffer__new(bpf_map__fd(skel->maps.rb), handler_event, NULL, NULL);
     if (!rb) {
@@ -128,7 +97,7 @@ int main(int argc, char **argv)
         goto clean;
     }
 
-    while (!exiting) {
+    while (!utils_should_exit()) {
         err = ring_buffer__poll(rb, 100); // timeout 100 ms
         if (err == -EINTR) {
             err = 0;
@@ -143,7 +112,7 @@ int main(int argc, char **argv)
 
 clean:
     ring_buffer__free(rb);
-    print_bpf__destroy(skel);
+    __BPF_DETACH_AND_DESTROY(print, skel);
 
     return 0;
 }

@@ -1,56 +1,44 @@
-#include "device.skel.h"
-#include <signal.h>
 #include <bpf/libbpf.h>
-#include <sys/resource.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
 
-static volatile bool exiting = false;
-
-static void sig_handler(int sig)
-{
-	exiting = true;
-}
-
-static void sig_act(void)
-{
-    signal(SIGINT, sig_handler);
-	signal(SIGTERM, sig_handler);
-}
+#include "bpf_utils.h"
+#include "device.skel.h"
 
 int main(int argc, char **argv)
 {
     int err;
-    struct device_bpf *skel;
-    sig_act();
 
-    struct rlimit rlim = {
-        .rlim_cur = 512UL << 20, /* 512MB */
-        .rlim_max = 512UL << 20,
-    };
-    if (setrlimit(RLIMIT_MEMLOCK, &rlim)) {
-        fprintf(stderr, "set rlimit error!\n");
+    if (argc != 2) {
+        printf("usage: %s cgroup\n", argv[0]);
         return 1;
     }
 
-    skel = device_bpf__open_and_load();
-    if (!skel) {
-        fprintf(stderr, "Failed to open and load BPF skeleton!\n");
-        return 1;
+    utils_set_rlimits();
+    utils_sigact();
+
+    __SKEL_DEFINE(device, skel);
+    skel = __BPF_OPEN_AND_LOAD(device);
+    __BPF_ATTACH(device, skel);
+
+    int cgrpfd = open(argv[1], O_RDONLY);
+    if (cgrpfd < 0) {
+        fprintf(stderr, "Failed to open %s\n", argv[1]);
+        goto clean;
     }
 
-    err = device_bpf__attach(skel);
-    if (err) {
-        fprintf(stderr, "Failed to attach skeleton\n");
-        return 1;
+    if (bpf_program__attach_cgroup(skel->progs.device_access, cgrpfd)) {
+        fprintf(stderr, "Failed to attach cgroup!\n");
+	    goto clean;
     }
 
-    while (!exiting) {
+    while (!utils_should_exit()) {
         sleep(10);
     }
 
 clean:
-    device_bpf__detach(skel);
-    device_bpf__destroy(skel);
+    __BPF_DETACH_AND_DESTROY(device, skel);
 
     return 0;
 }

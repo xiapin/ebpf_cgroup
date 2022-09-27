@@ -34,6 +34,6 @@ foreach(app ${apps})
   bpf_object(${app_stem} ${app_stem}.bpf.c)
   add_dependencies(${app_stem}_skel libbpf-build)
 
-  add_executable(${app_stem} ${app_stem}.c)
+  add_executable(${app_stem} ${app_stem}.c bpf_utils.c)
   target_link_libraries(${app_stem} ${app_stem}_skel)
 endforeach()
