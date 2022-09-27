@@ -10,11 +10,13 @@
 static int handler_event(void *ctx, void *data, size_t data_sz)
 {
     const struct event *e = data;
-
-    printf("handle cgroup %s : root:%d id:%d level:%d path:%s\n",
+#if 0
+    fprintf(stderr, "handle cgroup %s : root:%d id:%d level:%d path:%s\n",
             e->create ? "created" : "destroyed",
             e->root, e->id,
             e->level, e->path);
+#endif
+    fprintf(stderr, "%d\t%s\n", e->create, e->path);
 
     return 0;
 }
