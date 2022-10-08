@@ -45,12 +45,12 @@ int sysctl_w_deny(struct bpf_sysctl *ctx) {
 		return 1;
 }
 /*
-** __cgroup_bpf_check_dev_permission
-**__cgroup_bpf_run_filter_getsockopt
-**__cgroup_bpf_run_filter_setsockopt
-**__cgroup_bpf_run_filter_sk
-**__cgroup_bpf_run_filter_skb
-**__cgroup_bpf_run_filter_sock_addr
-**__cgroup_bpf_run_filter_sock_ops
-**__cgroup_bpf_run_filter_sysctl
+** __cgroup_bpf_check_dev_permission -> device
+**__cgroup_bpf_run_filter_getsockopt -> getsockopt
+**__cgroup_bpf_run_filter_setsockopt -> setsockopt
+**__cgroup_bpf_run_filter_sk -> 
+**__cgroup_bpf_run_filter_skb -> 
+**__cgroup_bpf_run_filter_sock_addr -> bind4 ?
+**__cgroup_bpf_run_filter_sock_ops -> sock_ops
+**__cgroup_bpf_run_filter_sysctl -> sysctl
 */
