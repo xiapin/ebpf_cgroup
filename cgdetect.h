@@ -5,12 +5,18 @@
 #define CGRP_PATH_LEN   128
 
 struct event {
-    int create; // 1.create 0.destroy
+    int create; // 1.create 0.destroy 2.beyond
     int root;
     int id;
     int level;
     char comm[COMM_LEN];
     char path[CGRP_PATH_LEN];
+};
+
+struct mem_stat {
+    long unsigned int mem_usage;
+    long unsigned int swap_usage;
+    long unsigned int kmem_usage;
 };
 
 #endif

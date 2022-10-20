@@ -51,22 +51,24 @@ SEC("cgroup/sysctl")
 int sysctl_w_deny(struct bpf_sysctl *ctx) {
 	struct data_t *data;
 	u32 ret;
-	u64 cgroup_id = 0;
 
 	data = bpf_ringbuf_reserve(&rb, sizeof(struct data_t), 0);
 	if (!data) {
 		return 0;
 	}
 
-	cgroup_id = bpf_get_current_cgroup_id();
-	data->cgroup_id = cgroup_id;
+	struct task_struct *current = (struct task_struct *)bpf_get_current_task();
+	int tgid = BPF_CORE_READ(current, parent, tgid);
+
+	// cgroup_id = bpf_get_current_cgroup_id();
+	data->tgid = tgid;
 	data->write = (int)ctx->write;
 	bpf_sysctl_get_name(ctx, data->sysctl_name, SYSCTL_NAME_LEN, 0);
 	bpf_sysctl_get_current_value(ctx, data->cur_value, SYSCTL_VAL_LEN);
 	bpf_sysctl_get_new_value(ctx, data->new_value, SYSCTL_VAL_LEN);
 
 	if (ctx->write) {
-		u32 *permis = bpf_map_lookup_elem(&hists, &cgroup_id);
+		u32 *permis = bpf_map_lookup_elem(&hists, &tgid);
 		if (!permis || *permis == 0) {
 			ret = 0;
 			goto end;

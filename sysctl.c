@@ -12,8 +12,8 @@ static int handler_event(void *ctx, void *data, size_t data_sz)
 {
     const struct data_t *d = data;
 
-    printf("cgroup_id:%ld access:%d sysctl:%s curr:%s new:%s\n",
-            d->cgroup_id, d->write, d->sysctl_name, d->cur_value,
+    printf("tgid:%ld access:%d sysctl:%s curr:%s new:%s\n",
+            d->tgid, d->write, d->sysctl_name, d->cur_value,
             d->new_value);
 
     return 0;
@@ -48,9 +48,10 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    unsigned long long cgroup_id = 4818;
+    // stat $(find /sys/fs/cgroup/ -name cgroup.procs | xargs grep -ws 5338 | cut -d ':' -f 1) | grep Inode
+    unsigned long long tgid = 20838;
     unsigned int allow = 1;
-    bpf_map_update_elem(bpf_map__fd(skel->maps.hists), &cgroup_id, &allow, 0);
+    bpf_map_update_elem(bpf_map__fd(skel->maps.hists), &tgid, &allow, 0);
 
     while (!utils_should_exit()) {
         err = ring_buffer__poll(rb, 100); // timeout 100 ms

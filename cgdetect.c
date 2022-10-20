@@ -1,5 +1,6 @@
 #include <argp.h>
 #include <bpf/libbpf.h>
+#include <bpf/bpf.h>
 #include <unistd.h>
 #include <getopt.h>
 #include <sys/stat.h>
@@ -25,6 +26,11 @@ static void cgroup_version_check(void)
 static int handler_event(void *ctx, void *data, size_t data_sz)
 {
     const struct event *e = data;
+
+    if (e->create == 2) {
+        printf("group_id:%d memory trigger!\n", e->id);
+        return 0;
+    }
 #if 0
     fprintf(stderr, "handle cgroup %s : root:%d id:%d level:%d path:%s\n",
             e->create ? "created" : "destroyed",
@@ -58,6 +64,16 @@ int main(int argc, char **argv)
         err = -1;
         goto clean;
     }
+
+    int cgroup_fd = 37;
+    struct mem_stat mem = {
+        .mem_usage = 306008,
+    };
+    bpf_map_update_elem(bpf_map__fd(skel->maps.filters), &cgroup_fd, &mem, 0);
+
+    cgroup_fd = 33;
+    bpf_map_update_elem(bpf_map__fd(skel->maps.filters), &cgroup_fd, &mem, 0);
+
 
     while (!utils_should_exit()) {
         err = ring_buffer__poll(rb, 100); // timeout 100 ms
