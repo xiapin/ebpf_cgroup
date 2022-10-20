@@ -2,10 +2,25 @@
 #include <bpf/libbpf.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <sys/stat.h>
+#include <sys/vfs.h>
 
 #include "bpf_utils.h"
 #include "cgdetect.h"
 #include "cgdetect.skel.h"
+
+static int cgroupV2 = 0;
+
+static void cgroup_version_check(void)
+{
+#define CGROUP2_SUPER_MAGIC 0x63677270
+    struct statfs buf;
+
+    statfs("/sys/fs/cgroup", &buf);
+    if (buf.f_type == CGROUP2_SUPER_MAGIC) {
+        cgroupV2 = 1;
+    }
+}
 
 static int handler_event(void *ctx, void *data, size_t data_sz)
 {
@@ -16,7 +31,8 @@ static int handler_event(void *ctx, void *data, size_t data_sz)
             e->root, e->id,
             e->level, e->path);
 #endif
-    fprintf(stderr, "%d\t%s\n", e->create, e->path);
+    if (cgroupV2 || (!cgroupV2 && e->root == 1))
+        fprintf(stderr, "%d\t%s\n", e->create, e->path);
 
     return 0;
 }
@@ -31,6 +47,7 @@ int main(int argc, char **argv)
     }
 
     utils_sigact();
+    cgroup_version_check();
 
     __SKEL_DEFINE(cgdetect, skel);
     skel = __BPF_OPEN_AND_LOAD(cgdetect);

@@ -14,13 +14,26 @@
 */
 
 #include "vmlinux.h"
+#include "sysctl.h"
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
 #include <bpf/bpf_core_read.h>
 
 char LICENSE[] SEC("license") = "Dual BSD/GPL";
-char name[32];
 
+struct {
+	__uint(type, BPF_MAP_TYPE_HASH);
+	__uint(max_entries, 1024);
+	__type(key, u32);
+	__type(value, u32);
+} hists SEC(".maps");
+
+struct {
+    __uint(type, BPF_MAP_TYPE_RINGBUF);
+    __uint(max_entries, 128 * 1024);
+} rb SEC(".maps");
+
+char comm[16];
 /*
 **	bpf_prog_attach
 	case BPF_PROG_TYPE_CGROUP_DEVICE:
@@ -36,13 +49,34 @@ char name[32];
 */
 SEC("cgroup/sysctl")
 int sysctl_w_deny(struct bpf_sysctl *ctx) {
-	if (ctx->write) {
-		bpf_sysctl_get_name(ctx, name, sizeof(name) , 0);
-		bpf_printk("write %s denied!\n", name);
+	struct data_t *data;
+	u32 ret;
+	u64 cgroup_id = 0;
+
+	data = bpf_ringbuf_reserve(&rb, sizeof(struct data_t), 0);
+	if (!data) {
 		return 0;
 	}
-	else
-		return 1;
+
+	cgroup_id = bpf_get_current_cgroup_id();
+	data->cgroup_id = cgroup_id;
+	data->write = (int)ctx->write;
+	bpf_sysctl_get_name(ctx, data->sysctl_name, SYSCTL_NAME_LEN, 0);
+	bpf_sysctl_get_current_value(ctx, data->cur_value, SYSCTL_VAL_LEN);
+	bpf_sysctl_get_new_value(ctx, data->new_value, SYSCTL_VAL_LEN);
+
+	if (ctx->write) {
+		u32 *permis = bpf_map_lookup_elem(&hists, &cgroup_id);
+		if (!permis || *permis == 0) {
+			ret = 0;
+			goto end;
+		}
+	}
+
+	ret = 1;
+end:
+	bpf_ringbuf_submit(data, 0);
+	return ret;
 }
 /*
 ** __cgroup_bpf_check_dev_permission -> device
