@@ -14,9 +14,9 @@ struct event {
 };
 
 struct mem_stat {
-    long unsigned int mem_usage;
-    long unsigned int swap_usage;
-    long unsigned int kmem_usage;
+    long unsigned int mem_pages;
+    long unsigned int swap_pages;
+    long unsigned int last_ts;
 };
 
 #endif
