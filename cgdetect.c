@@ -27,9 +27,20 @@ static int handler_event(void *ctx, void *data, size_t data_sz)
 {
     const struct event *e = data;
 
-    if (e->create == 2) {
-        printf("comm:%s group_id:%d memory trigger!\n", e->comm, e->id);
-        return 0;
+    switch (e->e_type) {
+        case CGROUP_MEM_TRIG:
+            printf("comm:%s group_id:%d out of memory!\n", e->comm, e->id);
+            break;
+        case CGROUP_OOM:
+            printf("comm:%s group_id:%d memory trigger!\n", e->comm, e->id);
+            break;
+        case CGROUP_CREATE:
+        case CGROUP_DESTROY:
+            if (cgroupV2 || (!cgroupV2 && e->root == 1))
+                fprintf(stderr, "%d\t%s\n", e->e_type, e->path);
+            break;
+        default:
+            break;
     }
 #if 0
     fprintf(stderr, "handle cgroup %s : root:%d id:%d level:%d path:%s\n",
@@ -37,8 +48,6 @@ static int handler_event(void *ctx, void *data, size_t data_sz)
             e->root, e->id,
             e->level, e->path);
 #endif
-    if (cgroupV2 || (!cgroupV2 && e->root == 1))
-        fprintf(stderr, "%d\t%s\n", e->create, e->path);
 
     return 0;
 }

@@ -18,7 +18,8 @@ struct {
     __type(value, struct mem_stat);
 } filters SEC(".maps");
 
-static inline int handle_cgroup_events(struct trace_event_raw_cgroup_event *ctx, int create)
+static inline int handle_cgroup_events
+(struct trace_event_raw_cgroup_event *ctx, enum CGROUP_EVENT type)
 {
     struct event *e;
     unsigned fname_off;
@@ -28,7 +29,7 @@ static inline int handle_cgroup_events(struct trace_event_raw_cgroup_event *ctx,
         return 0;
     }
 
-    e->create = create;
+    e->e_type = type;
     bpf_get_current_comm(&e->comm, sizeof(e->comm));
     e->root = (int)ctx->root;
     e->id = (int)ctx->id;
@@ -44,13 +45,13 @@ static inline int handle_cgroup_events(struct trace_event_raw_cgroup_event *ctx,
 SEC("tp/cgroup/cgroup_mkdir")
 int handle_cgroup_create(struct trace_event_raw_cgroup_event *ctx)
 {
-    return handle_cgroup_events(ctx, 1);
+    return handle_cgroup_events(ctx, CGROUP_CREATE);
 }
 
 SEC("tp/cgroup/cgroup_rmdir")
 int handle_cgroup_destroy(struct trace_event_raw_cgroup_event *ctx)
 {
-    return handle_cgroup_events(ctx, 0);
+    return handle_cgroup_events(ctx, CGROUP_DESTROY);
 }
 
 SEC("kprobe/try_charge")
@@ -86,10 +87,31 @@ int BPF_KPROBE(try_charge, struct mem_cgroup *memcg,
         return 0;
     }
 
-    e->create = 2;
+    e->e_type = CGROUP_MEM_TRIG;
     e->id = cgroup_id;
 
     bpf_get_current_comm(&e->comm, sizeof(e->comm));
+    bpf_ringbuf_submit(e, 0);
+
+    return 0;
+}
+
+SEC("kprobe/oom_kill_process")
+int BPF_KPROBE(oom_kill_process, struct oom_control *oc, const char *message)
+{
+    struct event *e;
+    u32 cgroup_id = 0;
+
+    BPF_CORE_READ_INTO(&cgroup_id, oc, memcg, css.cgroup, kn, id);
+
+    e = bpf_ringbuf_reserve(&rb, sizeof(struct event), 0);
+    if (!e) {
+        return 0;
+    }
+
+    e->e_type = CGROUP_OOM;
+    e->id = cgroup_id;
+    bpf_probe_read_kernel(&e->comm, sizeof(e->comm), BPF_CORE_READ(oc, chosen, comm));
     bpf_ringbuf_submit(e, 0);
 
     return 0;

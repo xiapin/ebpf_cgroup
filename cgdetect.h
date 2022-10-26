@@ -4,8 +4,15 @@
 #define COMM_LEN        16
 #define CGRP_PATH_LEN   128
 
+enum CGROUP_EVENT {
+    CGROUP_DESTROY      = 0,
+    CGROUP_CREATE,
+    CGROUP_MEM_TRIG,
+    CGROUP_OOM,
+};
+
 struct event {
-    int create; // 1.create 0.destroy 2.beyond
+    enum CGROUP_EVENT e_type; // 1.create 0.destroy 2.beyond
     int root;
     int id;
     int level;
