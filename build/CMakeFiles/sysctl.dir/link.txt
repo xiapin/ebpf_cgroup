@@ -1,0 +1,1 @@
+/usr/bin/cc CMakeFiles/sysctl.dir/sysctl.c.o CMakeFiles/sysctl.dir/bpf_utils.c.o -o sysctl  /usr/lib64/libbpf.so -lelf -lz -lbpf 

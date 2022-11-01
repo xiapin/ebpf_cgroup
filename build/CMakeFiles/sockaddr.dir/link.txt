@@ -1,0 +1,1 @@
+/usr/bin/cc CMakeFiles/sockaddr.dir/sockaddr.c.o CMakeFiles/sockaddr.dir/bpf_utils.c.o -o sockaddr  /usr/lib64/libbpf.so -lelf -lz -lbpf 

@@ -1,0 +1,1 @@
+/usr/bin/cc CMakeFiles/device.dir/device.c.o CMakeFiles/device.dir/bpf_utils.c.o -o device  /usr/lib64/libbpf.so -lelf -lz -lbpf 
