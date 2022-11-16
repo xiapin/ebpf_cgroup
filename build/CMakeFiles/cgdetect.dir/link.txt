@@ -1,1 +1,0 @@
-/usr/bin/cc CMakeFiles/cgdetect.dir/cgdetect.c.o CMakeFiles/cgdetect.dir/bpf_utils.c.o -o cgdetect  /usr/lib64/libbpf.so -lelf -lz -lbpf 

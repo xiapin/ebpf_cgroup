@@ -1,1 +1,0 @@
-/usr/bin/cc CMakeFiles/sendmsg.dir/sendmsg.c.o CMakeFiles/sendmsg.dir/bpf_utils.c.o -o sendmsg  /usr/lib64/libbpf.so -lelf -lz -lbpf 

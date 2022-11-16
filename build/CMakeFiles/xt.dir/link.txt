@@ -1,1 +1,0 @@
-/usr/bin/cc CMakeFiles/xt.dir/xt.c.o CMakeFiles/xt.dir/bpf_utils.c.o -o xt  /usr/lib64/libbpf.so -lelf -lz -lbpf 

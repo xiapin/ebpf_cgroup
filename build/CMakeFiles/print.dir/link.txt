@@ -1,1 +1,0 @@
-/usr/bin/cc CMakeFiles/print.dir/print.c.o CMakeFiles/print.dir/bpf_utils.c.o -o print  /usr/lib64/libbpf.so -lelf -lz -lbpf 

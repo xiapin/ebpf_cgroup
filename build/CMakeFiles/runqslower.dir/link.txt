@@ -1,1 +1,0 @@
-/usr/bin/cc CMakeFiles/runqslower.dir/runqslower.c.o CMakeFiles/runqslower.dir/bpf_utils.c.o -o runqslower  /usr/lib64/libbpf.so -lelf -lz -lbpf 

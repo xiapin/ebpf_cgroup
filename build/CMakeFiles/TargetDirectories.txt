@@ -1,9 +1,0 @@
-/root/samples/build/CMakeFiles/cgdetect.dir
-/root/samples/build/CMakeFiles/device.dir
-/root/samples/build/CMakeFiles/print.dir
-/root/samples/build/CMakeFiles/runqslower.dir
-/root/samples/build/CMakeFiles/sendmsg.dir
-/root/samples/build/CMakeFiles/sockaddr.dir
-/root/samples/build/CMakeFiles/sysctl.dir
-/root/samples/build/CMakeFiles/edit_cache.dir
-/root/samples/build/CMakeFiles/rebuild_cache.dir
